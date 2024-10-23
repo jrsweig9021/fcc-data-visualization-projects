@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cyclicst Scatterplot</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+      }
+
+      .dot {
+        fill: steelblue;
+      }
+
+      .tooltip {
+        position: absolute;
+        text-align: center;
+        width: 60px;
+        padding: 5px;
+        font: 12px sans-serif;
+        background: lightsteelblue;
+        border: 0px;
+        border-radius: 8px;
+        pointer-events: none;
+      }
+    </style>
+    
+  </head>
+  <body>
+    <h1 id="title">Cyclist Scatterplot</h1>
+    <svg id="scatterplot" width="800" height="400"></svg>
+    <div id="legend">Legend: Each dot represents a cyclist's time in a race.</div>
+    <div id="tooltip" class="tooltip" style="opacity: 0;"></div>
+
+
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script>
+      const svg = d3.select("#scatterplot");
+      const tooltip = d3.select("#tooltip");
+
+      const margin = {top: 20, right: 30, bottom: 40, left: 40},
+            width = +svg.attr("width") - margin.left- margin.right,
+            height = + svg.attr("height") - margin.top - margin.bottom;
+
+      const g = svg.append("g").attr("transform", `translate(${margin.left},${margin.top})`);
+
+      d3.json("https://raw.githubusercontent.com/freeCodeCamp/ProjectReferenceData/master/cyclist-data.json").then(data => {
+        // Parse the time and year
+        data.forEach(d => {
+          d.Year = +d.Year;
+          d.Time = new Date(1970, 0, 1, 0, d.Time.split(':')[0], d.Time.split(':')[1]);
+        });
+
+        const x = d3.scaleLinear().domain(d3.extent(data, d => d.Year)).range([0, width]);
+
+        const y = d3.scaleTime().domain(d3.extent(data, d => d.Time)).range([height, 0]);
+
+        const xAxis = d3.axisBottom(x).tickFormat(d3.format("d"));
+        const yAxis = d3.axisLeft(y).tickFormat(d3.timeFormat("%M:%S"));
+
+        g.append("g").attr("id", "x-axis").attr("transform", `translate(0,${height})`).call(xAxis);
+
+        g.append("g").attr("id", "y-axis").call(yAxis);
+
+        g.selectAll(".dot").data(data).enter().append("circle").attr("class", "dot").attr("cx", d => x(d.Year)).attr("cy", d => y(d.Time)).attr("r", 5).attr("data-xvalue", d => d.Year).attr("data-yvalue", d => d.Time).on("mouseover", (event, d) => {
+          tooltip.transition().duration(200).style("opacity", .9);
+          tooltip.html(`${d.Name}: ${d.Nationality}<br>Year: ${d.Year}<br>Time: ${d.Time.toLocaleTimeString('en-US', {
+          hour12: false })}`).attr("data-year", d.Year).style("left", (event.pageX + 5) + "px").style("top", (event.pageY - 28) + "px");
+        }).on("mouseout", () => {
+          tooltip.transition().duration(500).style("opacity", 0);
+        });
+      });
+    </script>
+    <script src="https://cdn.freecodecamp.org/testable-projects-fcc/v1/bundle.js"></script>
+  </body>
+</html>
